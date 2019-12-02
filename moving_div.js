@@ -1,7 +1,7 @@
 class MovingDiv {
 
-    constructor(id, width = 50, height = 50, bgColor = '#FFFFFF', borderColor = '#000000') {
-        this.div = document.querySelector(id);
+    constructor(selector, width = 50, height = 50, bgColor = '#FFFFFF', borderColor = '#000000') {
+        this.div = document.querySelector(selector);
         if (this.div) {
             this.width = width;
             this.height = height;
@@ -88,6 +88,14 @@ class MovingDiv {
         this.div.style.color = color;
     }
 
+    addClass(className) {
+        this.div.classList.add(className);
+    }
+
+    removeClass(className) {
+        this.div.classList.remove(className);
+    }
+
     draw() {
         this.div.style.left = this.left + 'px';
         this.div.style.top = this.top + 'px';
@@ -96,7 +104,6 @@ class MovingDiv {
         this.div.style.color = this.bgColor;
         this.div.style.backgroundColor = this.bgColor;
         this.div.style.fontSize = Math.floor(this.width / 4) + 'px';
-        console.log(this.div.style.fontSize);
         this.div.style.border = '1px solid ' + this.borderColor;
     }
 
@@ -109,6 +116,14 @@ class MoveController {
         this.step = step;
         this.offsetX = this.offsetY = 0;
         div.draw();
+    }
+
+    getDiv() {
+        return this.div;
+    }
+
+    setDiv(div) {
+        this.div = div;
     }
 
     redraw() {
@@ -130,58 +145,126 @@ class MoveController {
         }
     }
 
-    start() {
+    jump() {
+        this.stop();
+        let oldTop = this.div.getTop();
+        let height = this.div.getHeight();
+        let newTop = (oldTop < height) ? 0 : oldTop - height;
+        this.div.addClass('animated');
+        this.div.setTop(newTop);
+        setTimeout( () => { this.div.setTop(oldTop); }, 500);
+        setTimeout(() => {
+            this.div.removeClass('animated');
+            this.start();
+            }, 1000);
+    }
 
-        document.addEventListener('keydown', (event) => {
-           switch(event.code) {
-               case 'ArrowUp' : {
-                   (this.offsetY > -1) && this.offsetY--;
-                   break;
-               }
-               case 'ArrowDown' : {
-                   (this.offsetY < 1) && this.offsetY++;
-                   break;
-               }
-               case 'ArrowLeft' : {
-                   (this.offsetX > -1) && this.offsetX--;
-                   break;
-               }
-               case 'ArrowRight' : {
-                   (this.offsetX < 1) && this.offsetX++;
-                   break;
-               }
-           }
-        });
+    sit() {
+        this.stop();
+        let clientWidth = document.documentElement.clientWidth;
+        let oldTop = this.div.getTop();
+        let oldHeight = this.div.getHeight();
+        let oldLeft = this.div.getLeft();
+        let oldWidth = this.div.getWidth();
+        let newTop = oldTop + Math.floor(oldHeight * .4);
+        let newHeight = Math.floor(oldHeight * .4);
+        let diffLeft = oldLeft - Math.floor(oldWidth * .125);
+        let newLeft = diffLeft > 0 ? diffLeft : 0;
+        let newWidth = oldWidth * 1.25;
+        if (newLeft + newWidth > clientWidth) {
+            newLeft -= newLeft + newWidth - clientWidth;
+        }
+        this.div.addClass('animated');
+        this.div.setTop(newTop);
+        this.div.setHeight(newHeight);
+        this.div.setLeft(newLeft);
+        this.div.setWidth(newWidth);
+        setTimeout(() => {
+            this.div.setTop(oldTop);
+            this.div.setHeight(oldHeight);
+            this.div.setLeft(oldLeft);
+            this.div.setWidth(oldWidth);
+        }, 500);
+        setTimeout(() => {
+            this.div.removeClass('animated');
+            this.start();
+            }, 1000);
+    }
 
-        document.addEventListener('keyup', (event) => {
-            switch(event.code) {
-                case 'ArrowUp' : {
-                    this.offsetY++;
-                    break;
-                }
-                case 'ArrowDown' : {
-                    this.offsetY--;
-                    break;
-                }
-                case 'ArrowLeft' : {
-                    this.offsetX++;
-                    break;
-                }
-                case 'ArrowRight' : {
-                    this.offsetX--;
-                    break;
-                }
+    onKeyDown(event) {
+        switch(event.code) {
+            case 'ArrowUp' : {
+                (this.offsetY > -1) && this.offsetY--;
+                break;
             }
-        });
+            case 'ArrowDown' : {
+                (this.offsetY < 1) && this.offsetY++;
+                break;
+            }
+            case 'ArrowLeft' : {
+                (this.offsetX > -1) && this.offsetX--;
+                break;
+            }
+            case 'ArrowRight' : {
+                (this.offsetX < 1) && this.offsetX++;
+                break;
+            }
+            case 'Space' : {
+                this.jump();
+                break;
+            }
+            case 'ControlLeft' :
+            case 'ControlRight' : {
+                this.sit();
+                break;
+            }
+        }
+    }
 
-        setInterval(() => { this.redraw(); }, 10);
+    onKeyUp(event) {
+        switch(event.code) {
+            case 'ArrowUp' : {
+                this.offsetY++;
+                break;
+            }
+            case 'ArrowDown' : {
+                this.offsetY--;
+                break;
+            }
+            case 'ArrowLeft' : {
+                this.offsetX++;
+                break;
+            }
+            case 'ArrowRight' : {
+                this.offsetX--;
+                break;
+            }
+        }
+    }
 
+    handleEvent(event) {
+        switch (event.type) {
+            case 'keydown' : return this.onKeyDown(event);
+            case 'keyup' : return this.onKeyUp(event);
+        }
+    }
+
+    start() {
+        document.addEventListener('keydown', this);
+        document.addEventListener('keyup', this);
+        this.interval = setInterval(() => { this.redraw(); }, 10);
+    }
+
+    stop() {
+        document.removeEventListener('keydown', this);
+        document.removeEventListener('keyup', this);
+        clearInterval(this.interval);
     }
 
 }
 
 window.onload = function() {
-  let div = new MovingDiv('#iliketomoveit', 50, 50, 'cyan', 'blue');
+  let div = new MovingDiv('.iliketomoveit', 50, 50, 'cyan', 'blue');
   if (div) {
       let controller = new MoveController(div, 2);
       controller.start();

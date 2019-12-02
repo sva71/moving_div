@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Homework 16</title>
     <style>
-        #iliketomoveit {
+        .iliketomoveit {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -13,11 +13,14 @@
             font-family: Helvetica, sans-serif;
             font-weight: bold;
         }
+        .animated {
+            transition: top 0.5s, left 0.5s, height 0.5s, width 0.5s;
+        }
     </style>
 </head>
 <body>
 
-<div id="iliketomoveit">БЭМС!</div>
+<div class="iliketomoveit">БЭМС!</div>
 
 <script src="moving_div.js"></script>
 
