@@ -1,15 +1,22 @@
+function getRandom(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
 class MovingDiv {
 
-    constructor(selector, width = 50, height = 50, bgColor = '#FFFFFF', borderColor = '#000000') {
-        this.div = document.querySelector(selector);
-        if (this.div) {
-            this.width = width;
-            this.height = height;
-            this.bgColor = bgColor;
-            this.borderColor = borderColor;
-            this.left = Math.floor(document.documentElement.clientWidth / 2) - Math.floor(this.width / 2);
-            this.top = Math.floor(document.documentElement.clientHeight / 2) - Math.floor(this.height / 2);
-        }
+    constructor(className, idName, width = 50, height = 50, bgColor = '#FFFFFF', borderColor = '#000000') {
+        this.div = document.createElement('div');
+        document.body.append(this.div);
+        this.div.classList.add(className);
+        this.div.id = idName;
+        this.div.innerHTML = 'БЭМС!';
+        this.className = className;
+        this.width = width;
+        this.height = height;
+        this.bgColor = bgColor;
+        this.borderColor = borderColor;
+        this.left = Math.floor(document.documentElement.clientWidth / 2) - Math.floor(this.width / 2);
+        this.top = Math.floor(document.documentElement.clientHeight / 2) - Math.floor(this.height / 2);
     }
 
     getLeft() {
@@ -96,6 +103,10 @@ class MovingDiv {
         this.div.classList.remove(className);
     }
 
+    setId(id) {
+        this.div.id = id;
+    }
+
     draw() {
         this.div.style.left = this.left + 'px';
         this.div.style.top = this.top + 'px';
@@ -116,14 +127,6 @@ class MoveController {
         this.step = step;
         this.offsetX = this.offsetY = 0;
         div.draw();
-    }
-
-    getDiv() {
-        return this.div;
-    }
-
-    setDiv(div) {
-        this.div = div;
     }
 
     redraw() {
@@ -161,6 +164,16 @@ class MoveController {
 
     sit() {
         this.stop();
+        if (!this.clone) {
+            document.addEventListener('keydown', (event) => {
+                if (event.code === 'KeyC') {
+                    setTimeout(() => {
+                        this.cloneDiv();
+                    }, 1000);
+                }
+            });
+        }
+        console.dir(document);
         let clientWidth = document.documentElement.clientWidth;
         let oldTop = this.div.getTop();
         let oldHeight = this.div.getHeight();
@@ -189,6 +202,19 @@ class MoveController {
             this.div.removeClass('animated');
             this.start();
             }, 1000);
+    }
+
+    cloneDiv() {
+        if (!this.clone) {
+            let clientWidth = document.documentElement.clientWidth;
+            let clientHeight = document.documentElement.clientHeight;
+            this.clone = new MovingDiv(this.div.className, 'clone', this.div.getWidth(), this.div.getHeight(),
+                this.div.getBgColor(), this.div.getBorderColor());
+            this.clone.setLeft(getRandom(0, clientWidth - this.div.getWidth()));
+            this.clone.setTop(getRandom(0, clientHeight - this.div.getHeight()));
+            this.clone.draw();
+            this.div.setBorderColor('red');
+        }
     }
 
     onKeyDown(event) {
@@ -239,6 +265,24 @@ class MoveController {
                 this.offsetX--;
                 break;
             }
+            case 'KeyC' : {
+                if (event.altKey) {
+                    this.cloneDiv();
+                }
+                break;
+            }
+        }
+    }
+
+    onClick(event) {
+        if ((this.clone) && (event.toElement.className === this.div.className) && (event.toElement.id === 'clone')) {
+            let buf = this.div;
+            this.div = this.clone;
+            this.clone = buf;
+            this.clone.setBorderColor(this.div.getBorderColor());
+            this.clone.setId('clone');
+            this.div.setId('div');
+            this.div.setBorderColor('red');
         }
     }
 
@@ -246,27 +290,30 @@ class MoveController {
         switch (event.type) {
             case 'keydown' : return this.onKeyDown(event);
             case 'keyup' : return this.onKeyUp(event);
+            case 'mousedown' : return this.onClick(event);
         }
     }
 
     start() {
         document.addEventListener('keydown', this);
         document.addEventListener('keyup', this);
+        document.addEventListener('mousedown', this);
         this.interval = setInterval(() => { this.redraw(); }, 10);
     }
 
     stop() {
         document.removeEventListener('keydown', this);
         document.removeEventListener('keyup', this);
+        document.removeEventListener('mousedown', this);
         clearInterval(this.interval);
     }
 
 }
 
 window.onload = function() {
-  let div = new MovingDiv('.iliketomoveit', 50, 50, 'cyan', 'blue');
-  if (div) {
-      let controller = new MoveController(div, 2);
-      controller.start();
-  }
+    let div = new MovingDiv('iliketomoveit', 'div',50, 50, 'cyan', 'blue');
+    if (div) {
+        let controller = new MoveController(div, 2);
+        controller.start();
+    }
 };
